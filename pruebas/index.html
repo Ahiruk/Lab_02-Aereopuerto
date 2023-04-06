@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Mapa de Europa</title>
+    <style>
+      #map {
+        height: 500px;
+        width: 100%;
+      }
+      
+      #markers {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCV5AAL9qrKJ4lDN9cxstsWy3Pht0LDTTM"></script>
+    <script>
+      // Carga el archivo CSV y crea los marcadores en el mapa
+fetch('europa.csv')
+  .then(response => response.text())
+  .then(data => {
+    const markers = [];
+    const lines = data.split('\n');
+    lines.forEach(line => {
+      const values = line.split(',');
+      const country = values[0];
+      const city = values[1];
+      const lat = parseFloat(values[2]);
+      const lng = parseFloat(values[3]);
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        title: city + ', ' + country,
+        map: map
+      });
+      markers.push(marker);
+    });
+
+    // Agrega un evento de clic a los marcadores
+    markers.forEach(marker => {
+      marker.addListener('click', () => {
+        marker.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+        const markerTitle = marker.getTitle();
+        const listItem = document.createElement('li');
+        listItem.textContent = markerTitle;
+        document.getElementById('markers').appendChild(listItem);
+      });
+    });
+  })
+  .catch(error => {
+    console.error(error);
+  });
+
+// Crea el mapa de Google Maps
+const map = new google.maps.Map(document.getElementById('map'), {
+  zoom: 4,
+  center: { lat: 48.6908333, lng: 9.1405556 } // Centro en Europa
+});
+
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <ul id="markers"></ul>
+  </body>
+</html>

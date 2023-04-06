@@ -1,0 +1,116 @@
+"Madrid": [("Lisbon", 635), ("Paris", 1056), ("Barcelona", 621)],
+"Barcelona": [("Madrid", 621), ("Paris", 831), ("Milan", 862), ("Lisbon", 1204)],
+"Paris": [("Madrid", 1056), ("Barcelona", 831), ("Brussels", 265), ("Amsterdam", 430), ("Berlin", 878), ("Rome", 1105)],
+"Brussels": [("Paris", 265), ("Amsterdam", 173), ("Berlin", 655), ("London", 321)],
+"Amsterdam": [("Paris", 430), ("Brussels", 173), ("Berlin", 663), ("London", 358)],
+"Berlin": [("Paris", 878), ("Brussels", 655), ("Amsterdam", 663), ("Prague", 280), ("Vienna", 665), ("Warsaw", 574)],
+"Prague": [("Berlin", 280), ("Vienna", 330), ("Budapest", 530), ("Krakow", 537)],
+"Vienna": [("Berlin", 665), ("Prague", 330), ("Budapest", 243), ("Rome", 1036)],
+"Budapest": [("Prague", 530), ("Vienna", 243), ("Belgrade", 370), ("Sofia", 472), ("Bucharest", 605)],
+"Rome": [("Paris", 1105), ("Vienna", 1036), ("Naples", 225)],
+"Lisbon": [("Madrid", 635), ("Barcelona", 1204)],
+"London": [("Brussels", 321), ("Amsterdam", 358), ("Dublin", 463)],
+"Dublin": [("London", 463)],
+"Milan": [("Barcelona", 862), ("Zurich", 222), ("Vienna", 719)],
+"Zurich": [("Milan", 222), ("Vienna", 672)],
+"Wasaw":[("Berlin",574)],
+"Naples":[("Rome",225)],
+"Belgrade": [("Budapest",370)],
+"Sofia": [("Budapest",472)],
+"Bucharest": [("Budapest",605)],
+"Krakow": [("Prague",537)]
+
+# Pedir las ciudades al usuario
+#print("Ingrese el nombre tal cual como se muestra en la pantalla")
+#print(" ")
+#print("Las ciudades son:")
+#print("---------------------------------------------------------------------")
+#print("Madrid, Barcelona, Paris, Brussels, Amsterdam, Berlin, Prague, Vienna")
+#print("Budapest, Rome, Lisbon, London, Dublin, Milan, Zurich, Wasaw")
+#print("Naples, Belgrade, Sofia, Bucharest, Krakow")
+#print("---------------------------------------------------------------------")
+
+import dash
+from dash import html, dcc
+from dash.dependencies import Input, Output, State
+from funcionamiento import dijkstra, obtener_grafo
+
+#obtener el grafo
+graph = obtener_grafo()
+
+# Inicializar la aplicación
+app = dash.Dash(__name__)
+
+# Estilo de la página
+app.layout = html.Div([
+    html.H1('Rutas de vuelo más cortas en Europa'),
+    html.Div([
+        html.P('Ingrese la ciudad de origen y destino para encontrar la ruta más corta entre ellas:'),
+        dcc.Dropdown(
+            id='ciudad_origen',
+            options=[{'label': city, 'value': city} for city in graph.keys()],
+            placeholder='Ciudad de origen'
+        ),
+        dcc.Dropdown(
+            id='ciudad_destino',
+            options=[{'label': city, 'value': city} for city in graph.keys()],
+            placeholder='Ciudad de destino'
+        ),
+        html.Button('Encontrar ruta', id='submit_button')
+    ], style={'width': '50%', 'display': 'inline-block'}),
+    html.Div([
+        dcc.Graph(
+            id='ruta_mapa'
+        )
+    ], style={'width': '45%', 'display': 'inline-block', 'float': 'right'}),
+    html.Div(id='ruta_corta')
+])
+
+# Callback para encontrar la ruta más corta
+@app.callback(
+    [Output('ruta_corta', 'children'), Output('ruta_mapa', 'figure')],
+    [Input('submit_button', 'n_clicks')],
+    [State('ciudad_origen', 'value'), State('ciudad_destino', 'value')]
+)
+def encontrar_ruta(n_clicks, ciudad_origen, ciudad_destino):
+    if n_clicks:
+        if ciudad_origen and ciudad_destino:
+            distancia, ruta = dijkstra(graph, ciudad_origen, ciudad_destino)
+            ruta_str = ' -> '.join(ruta)
+            ruta_str = f'Ruta más corta: {ruta_str}. Distancia: {distancia}'
+            
+            # Crear el mapa
+            mapa = {
+                'data': [{
+                    'type': 'scattergeo',
+                    'lon': [graph[ciudad]['lon'] for ciudad in ruta],
+                    'lat': [graph[ciudad]['lat'] for ciudad in ruta],
+                    'mode': 'lines',
+                    'line': {'width': 2, 'color': 'blue'},
+                    'text': ruta,
+                    'hoverinfo': 'text'
+                }],
+                'layout': {
+                    'title': {'text': 'Ruta de vuelo más corta'},
+                    'geo': {
+                        'scope': 'europe',
+                        'projection': {'type': 'mercator'},
+                        'center': {'lon': 12.4964, 'lat': 41.9028},
+                        'zoom': 3,
+                        'showland': True,
+                        'landcolor': 'rgb(243, 243, 243)',
+                        'countrycolor': 'rgb(204, 204, 204)'
+                    }
+                }
+            }
+            
+            return ruta_str, mapa
+        
+        else:
+            return 'Debe ingresar la ciudad de origen y destino.', {}
+    
+    return '', {}
+
+# Correr la aplicación
+if __name__ == '__main__':
+    app.run_server(debug=True)
