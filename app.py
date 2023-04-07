@@ -1,7 +1,8 @@
 import dash
 import dash_leaflet as dl
 from dash import html
-from dash.dependencies import Input, Output
+from dash import dcc
+from dash.dependencies import Input, Output, State
 import pandas as pd
 import webbrowser
 
@@ -22,11 +23,13 @@ markers = [dl.CircleMarker(
 ) for i, location in enumerate(locations)]
 
 app.layout = html.Div([
-    dl.Map(center=(52, 20), zoom=4.3, children=[
-        dl.TileLayer(),
-        *markers
-    ], style={'width': '100%', 'height': '100vh', 'margin': "auto", "display": "block"}),
-    html.Div(id="output")
+    html.Div([
+        dl.Map(center=(52, 20), zoom=4.3, children=[
+            dl.TileLayer(),
+            *markers
+        ], style={'width': '70%', 'height': '90vh'}),
+        html.Div(id="output", style={'margin-left': '20px', 'flex': '1'})
+    ], style={'display': 'flex', 'width': '100%', 'height': '100vh', 'margin': "auto"}),
 ])
 
 @app.callback(
